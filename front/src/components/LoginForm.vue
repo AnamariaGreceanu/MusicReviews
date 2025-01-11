@@ -24,6 +24,8 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "LoginForm",
   data() {
@@ -38,6 +40,21 @@ export default {
     register: function () {
       this.$router.push("/register");
     },
+    login: function () {
+      axios
+        .post("http://localhost:8000/api/users/login", this.data)
+        .then((res) => {
+          localStorage.setItem("token", res.data.token);
+          this.$store.commit("setUserId", res.data.user.id);
+          this.$router.push("/albums");
+        })
+        .catch((err) =>
+          this.$vaToast.init({
+            message: err.response.data.message || "Login failed",
+            color: "danger",
+          })
+        );
+    },
   },
 };
 </script>
@@ -45,8 +62,10 @@ export default {
 <style scoped>
 .login-container {
   max-width: 400px;
-  margin: auto;
-  margin-top: 20px;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .form-buttons {

@@ -16,11 +16,10 @@ export default {
 
 <style scoped>
 .container {
-  width: 100%;
-  height: 100%;
   display: flex;
   justify-content: center;
-  align-content: center;
-  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #ad62c9;
 }
 </style>

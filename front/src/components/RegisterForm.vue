@@ -1,5 +1,5 @@
 <template>
-  <div class="login-container">
+  <div class="register-container">
     <va-form>
       <va-input
         class="mb-4"
@@ -23,6 +23,8 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "RegisterForm",
   data() {
@@ -38,15 +40,30 @@ export default {
     login: function () {
       this.$router.push("/login");
     },
+    register: function () {
+      axios
+        .post("http://localhost:8000/api/users/register", this.data)
+        .then(() => {
+          this.$router.push("/");
+        })
+        .catch((err) =>
+          this.$vaToast.init({
+            message: err.response.data.message || "Login failed",
+            color: "danger",
+          })
+        );
+    },
   },
 };
 </script>
 
 <style scoped>
-.login-container {
-  max-width: 300px;
-  margin: auto;
-  margin-top: 20px;
+.register-container {
+  max-width: 400px;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .form-buttons {

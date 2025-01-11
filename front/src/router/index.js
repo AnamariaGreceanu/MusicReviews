@@ -5,6 +5,7 @@ import AlbumsView from "../views/Albums.vue";
 import FavouritesView from "../views/Favourites.vue";
 
 const routes = [
+  { path: "/", redirect: "/login" },
   { path: "/login", name: "Login", component: LoginView },
   { path: "/register", name: "Register", component: RegisterView },
   { path: "/albums", name: "Albums", component: AlbumsView },
