@@ -8,6 +8,6 @@ router.post('/register', userController.registerUser)
 
 router.post("/addAlbumToFavourites/:albumId", userController.addAlbumToFavourites);
 router.get("/getFavouriteAlbums", userController.getFavouriteAlbums);
-router.delete("/removeFromFavourites/:albumId", userController.removeFromFavourites);
+router.delete("/removeFromFavourites/:favouriteId", userController.removeFromFavourites);
 
 module.exports=router

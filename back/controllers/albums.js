@@ -24,4 +24,23 @@ const generateFakeAlbums = async (req, res) => {
     }
 }
 
-module.exports={generateFakeAlbums}
+const getAllAlbums = async(req, res) => {
+    let albums = [];    
+    db.collection("albums").get().then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+            let currentDoc = {...doc.data()};
+            currentDoc.id = doc.id;
+            albums.push(currentDoc);
+        });
+    }).then(()=>{
+        if(albums.length !== 0) {
+            return res.status(200).json(albums);
+        } else {
+            return res.status(404).json({message: "No albums found"})
+        }
+    }).catch((e)=>{
+        res.status(500).json({message:"Server error"});
+    });
+};
+
+module.exports={generateFakeAlbums, getAllAlbums}

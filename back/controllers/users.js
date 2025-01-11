@@ -73,10 +73,70 @@ const loginUser = async (req, res) => {
             return res.status(403).send({message:"Invalid password for this email"})
         }
         let accessToken = generateToken(user.email)
-        return res.status(200).send({ message: "Logged in!", user, accessToken });
+        return res.status(201).send({ message: "Logged in!", user, accessToken });
     } catch (err) {
         return res.status(500).send(err)
     }
 }
 
-module.exports={generateFakeUsers,registerUser,loginUser}
+const addAlbumToFavourites = async(req, res) => {
+    try {
+        const userId = req.user;
+        let albumId = req.params.albumId;
+        db.collection("users").doc(userId).collection("favourites").add({albumId:albumId}).then(()=> {
+            return res.status(201).json({message:"Album added to favourites"});
+        }).catch((err) =>
+            res.status(500).send(err)
+        );
+    } catch (err){
+        return res.status(500).send(err);
+    }
+}
+
+const getFavouriteAlbums = async(req, res) => {
+    try {
+        const userId = req.user;
+
+        const favouritesSnapshot = await db.collection("users").doc(userId).collection("favourites").get()
+        if (favouritesSnapshot.empty) {
+            return res.status(404).json({ message: "No favourites found."});
+        }
+
+        const favourites =favouritesSnapshot.docs.map(doc => ({
+            albumId: doc.data().albumId,
+            favouriteId: doc.id,
+        }));
+
+        let albums = [];
+        for (const { albumId, favouriteId } of favourites) {
+            try {
+                const albumDoc = await db.collection("albums").doc(albumId).get();
+                if (albumDoc.exists) {
+                    albums.push({ ...albumDoc.data(), favouriteId });
+                }
+            } catch (err) {
+                return res.status(500).send(err);
+            }
+        }
+        return res.status(200).json(albums);
+    } catch (err) {
+        return res.status(500).send(err);
+    }
+}
+
+const removeFromFavourites = async (req, res) => { 
+    try {
+        const userId = req.user;
+        let favouriteId = req.params.favouriteId;
+        db.collection("users").doc(userId).collection("favourites").doc(favouriteId).delete().then(()=> {
+            return res.status(200).json({message:"Album removed from favourites"});
+        }).catch(err =>
+            res.status(500).send(err)
+        );
+    } catch (err) {
+        return res.status(500).send(err);
+    }
+}
+
+
+module.exports={generateFakeUsers,registerUser,loginUser, addAlbumToFavourites, getFavouriteAlbums, removeFromFavourites}
