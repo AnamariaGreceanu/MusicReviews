@@ -3,9 +3,9 @@
     <va-card>
       <div class="card-content">
         <div class="left-section">
-          <h3>{{ album.name }}</h3>
+          <h3>{{ album.albumName }}</h3>
           <p class="album-artist">By {{ album.artist }}</p>
-          <img :src="album.image" alt="Album Cover" class="album-photo" />
+          <img :src="album.photoAlbum" alt="Album Cover" class="album-photo" />
         </div>
 
         <div class="right-section">
@@ -14,9 +14,9 @@
           <div class="reviews" ref="reviewsContainer">
             <div v-for="(review, index) in reviews" :key="index" class="review">
               <p>
-                <strong>{{ review.author }}</strong>
+                <strong>{{ review.username }}</strong>
                 <i
-                  v-if="review.liked"
+                  v-if="review.isLiked"
                   class="pi pi-thumbs-up"
                   style="font-size: 1.5rem; margin: 0 5px"
                 ></i>
@@ -26,10 +26,10 @@
                   style="font-size: 1.5rem; margin: 0 5px"
                 ></i>
 
-                : {{ review.content }}
+                {{ review.review }}
               </p>
               <va-button
-                v-if="review.authorId === userId"
+                v-if="review.userId === userId"
                 size="small"
                 class="edit-btn"
                 @click="editReview(review.id)"
@@ -37,7 +37,7 @@
                 Edit
               </va-button>
               <va-button
-                v-if="review.authorId === userId"
+                v-if="review.userId === userId"
                 size="small"
                 color="danger"
                 @click="deleteReview(review.id)"
@@ -46,7 +46,7 @@
               </va-button>
             </div>
             <div v-if="loading" class="loading">Loading more reviews...</div>
-            <div v-if="reviews.length === 0" class="no-reviews">
+            <div v-if="!loading && reviews.length === 0" class="no-reviews">
               No reviews yet.
             </div>
           </div>
@@ -55,10 +55,10 @@
     </va-card>
     <va-modal
       v-model="isModalOpen"
-      title="Add a Review"
+      :title="isEditMode ? 'Edit Review' : 'Add a Review'"
       @cancel="closeModal"
-      @ok="addReview"
-      ok-text="Submit"
+      @ok="isEditMode ? updateReview() : addReview()"
+      :ok-text="isEditMode ? 'Update' : 'Submit'"
     >
       <div class="modal-content">
         <va-input
@@ -82,6 +82,8 @@
 
 <script>
 import "primeicons/primeicons.css";
+import axios from "axios";
+
 export default {
   name: "AlbumCard",
   props: {
@@ -94,78 +96,182 @@ export default {
     return {
       reviews: [],
       loading: false,
-      userId: "user123",
+      userId: this.$store.state.userId,
       isModalOpen: false,
+      isEditMode: false,
+      currentReviewId: null,
       newReviewContent: "",
       newReviewLiked: true,
+      token: localStorage.getItem("token"),
     };
   },
   methods: {
     loadReviews() {
-      const newReviews = [
-        {
-          id: 1,
-          author: "John",
-          content: "Amazing album!",
-          liked: true,
-          authorId: "user456",
-        },
-        {
-          id: 2,
-          author: "Jane",
-          content: "Loved the rhythm!",
-          liked: false,
-          authorId: "user123",
-        },
-        {
-          id: 2,
-          author: "Jane",
-          liked: false,
-          content: "Loved the rhythm!",
-          authorId: "user123",
-        },
-        {
-          id: 2,
-          author: "Jane",
-          liked: true,
-          content: "Loved the rhythm!",
-          authorId: "user123",
-        },
-      ];
-
-      this.reviews = newReviews;
+      this.loading = true;
+      axios
+        .get(
+          `http://localhost:8000/api/reviews/getReviewsByAlbumId/${this.album.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+          }
+        )
+        .then((res) => {
+          this.reviews = res.data;
+        })
+        .catch((err) => {
+          this.$vaToast.init({
+            message: err.response.data.message || "Reviews couldn't be loaded",
+            color: "danger",
+          });
+          console.error("Error fetching reviews:", err);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
+
     openModal() {
       this.isModalOpen = true;
+      this.isEditMode = false;
+      this.newReviewContent = "";
+      this.newReviewLiked = true;
     },
+
     toggleLike() {
       this.newReviewLiked = !this.newReviewLiked;
     },
+
+    editReview(reviewId) {
+      const review = this.reviews.find((r) => r.id === reviewId);
+      if (review) {
+        this.isEditMode = true;
+        this.currentReviewId = reviewId;
+        this.newReviewContent = review.review;
+        this.newReviewLiked = review.isLiked;
+        this.isModalOpen = true;
+      }
+    },
+
     addReview() {
       if (this.newReviewContent.trim() === "") {
-        alert("Review content cant be empty.");
+        this.$vaToast.init({
+          message: "Review can't be empty",
+          color: "danger",
+        });
         return;
       }
+      const newReview = {
+        review: this.newReviewContent,
+        isLiked: this.newReviewLiked,
+      };
 
-      this.reviews.push({
-        id: Date.now(),
-        author: "Me",
-        content: this.newReviewContent,
-        liked: this.newReviewLiked,
-        authorId: this.userId,
-      });
+      axios
+        .post(
+          `http://localhost:8000/api/reviews/addReview/${this.album.id}`,
+          newReview,
+          {
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+          }
+        )
+        .then((res) => {
+          this.reviews.push(res.data.newReview);
+          this.$vaToast.init({
+            message: res.data.message,
+            color: "success",
+          });
+          this.newReviewContent = "";
+          this.newReviewLiked = false;
+          this.isModalOpen = false;
+        })
+        .catch((err) => {
+          this.$vaToast.init({
+            message:
+              err.response.data.message ||
+              "Failed to add the review. Please try again",
+            color: "danger",
+          });
+          console.error("Error adding review:", err);
+        });
+    },
 
-      this.newReviewContent = "";
-      this.newReviewLiked = false;
-      this.isModalOpen = false;
+    updateReview() {
+      if (this.newReviewContent.trim() === "") {
+        this.$vaToast.init({
+          message: "Review can't be empty",
+          color: "danger",
+        });
+        return;
+      }
+      const newReview = {
+        review: this.newReviewContent,
+        isLiked: this.newReviewLiked,
+      };
+
+      axios
+        .patch(
+          `http://localhost:8000/api/reviews/${this.currentReviewId}`,
+          newReview,
+          {
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+          }
+        )
+        .then((res) => {
+          const index = this.reviews.findIndex(
+            (review) => review.id === this.currentReviewId
+          );
+          if (index !== -1) {
+            this.reviews[index].review = this.newReviewContent;
+            this.reviews[index].isLiked = this.newReviewLiked;
+          }
+          this.isModalOpen = false;
+          this.$vaToast.init({
+            message: res.data.message,
+            color: "success",
+          });
+        })
+        .catch((err) => {
+          this.$vaToast.init({
+            message:
+              err.response.data.message ||
+              "Failed to update the review. Please try again",
+            color: "danger",
+          });
+          console.error("Error updating review:", err);
+        });
     },
-    editReview(reviewId) {
-      console.log(`Edit review ${reviewId}`);
-    },
+
     deleteReview(reviewId) {
-      this.reviews = this.reviews.filter((review) => review.id !== reviewId);
+      axios
+        .delete(`http://localhost:8000/api/reviews/${reviewId}`, {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        })
+        .then((res) => {
+          this.reviews = this.reviews.filter(
+            (review) => review.id !== reviewId
+          );
+          this.$vaToast.init({
+            message: res.data.message,
+            color: "success",
+          });
+        })
+        .catch((err) => {
+          console.error("Error deleting review:", err);
+          this.$vaToast.init({
+            message: err.response.data.message || "Review deleted successfully",
+            color: "success",
+          });
+        });
     },
   },
+
   mounted() {
     this.loadReviews();
   },

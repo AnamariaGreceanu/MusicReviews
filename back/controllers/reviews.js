@@ -1,5 +1,6 @@
 const { faker } = require('@faker-js/faker')
 const db=require('../config/config')
+const { findUserNameById } = require('../helpers/users')
 
 const generateFakeReviews = async (req, res) => {
     try { 
@@ -54,19 +55,22 @@ const addReview = async(req, res) => {
     }
 };
 
-const getReviewsByAlbumId = async(req,res) => {
+const getReviewsByAlbumId = async (req, res) => {
     try {
         const albumId = req.params.albumId;
+        const reviewsSnapshot = await db.collection("reviews").where("albumId", "==", albumId).get();
+
+        if (reviewsSnapshot.empty) {
+            return res.status(200).json([]);
+        }
+
         let reviews = [];
-        await db.collection("reviews").where("albumId", "==", albumId).get()
-            .then(function(querySnapshot) {
-                let review;
-                querySnapshot.forEach(function(doc) {
-                    review = doc.data();
-                    review.id = doc.id;
-                    reviews.push(review);
-                });
-            });
+        for (const doc of reviewsSnapshot.docs) {
+            const review = doc.data();
+            review.id = doc.id;
+            const username = await findUserNameById(review.userId);
+            reviews.push({...review,username: username});
+        }
         return res.status(200).json(reviews);
     } catch (err) {
         return res.status(500).json(err);

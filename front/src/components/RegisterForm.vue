@@ -48,7 +48,7 @@ export default {
         })
         .catch((err) =>
           this.$vaToast.init({
-            message: err.response.data.message || "Login failed",
+            message: err.response.data.message || "Register failed",
             color: "danger",
           })
         );

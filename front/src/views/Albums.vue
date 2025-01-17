@@ -1,7 +1,7 @@
 <template>
   <Navbar></Navbar>
   <div class="card-container">
-    <div v-for="(album, index) in album" :key="index" class="album-card-item">
+    <div v-for="(album, index) in albums" :key="index" class="album-card-item">
       <AlbumCard :album="album" />
     </div>
   </div>
@@ -10,6 +10,7 @@
 <script>
 import AlbumCard from "@/components/AlbumCard.vue";
 import Navbar from "@/components/Navbar.vue";
+import axios from "axios";
 
 export default {
   name: "AlbumsView",
@@ -19,14 +20,28 @@ export default {
   },
   data() {
     return {
-      album: [
-        { name: "Album 1", artist: "Artist 1", image: "image1.jpg" },
-        { name: "Album 2", artist: "Artist 2", image: "image2.jpg" },
-        { name: "Album 3", artist: "Artist 3", image: "image3.jpg" },
-        { name: "Album 4", artist: "Artist 4", image: "image4.jpg" },
-        { name: "Album 5", artist: "Artist 5", image: "image5.jpg" },
-      ],
+      userId: this.$store.state.userId,
+      token: localStorage.getItem("token"),
+      albums: [],
     };
+  },
+  mounted() {
+    axios
+      .get("http://localhost:8000/api/albums/getAllAlbums", {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      })
+      .then((res) => {
+        this.albums = res.data;
+      })
+      .catch((err) => {
+        this.$vaToast.init({
+          message: "Failed to load the albums. Try again",
+          color: "danger",
+        });
+        console.error("Error fetching albums:", err);
+      });
   },
 };
 </script>

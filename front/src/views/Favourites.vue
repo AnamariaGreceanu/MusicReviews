@@ -10,6 +10,7 @@
 <script>
 import AlbumCard from "../components/AlbumCard.vue";
 import Navbar from "@/components/Navbar.vue";
+import axios from "axios";
 
 export default {
   name: "FavouritesView",
@@ -19,12 +20,28 @@ export default {
   },
   data() {
     return {
-      albums: [
-        { name: "album 1", artist: "Artist 1", image: "image1.jpg" },
-        { name: "album 3", artist: "Artist 3", image: "image3.jpg" },
-        { name: "album 5", artist: "Artist 5", image: "image5.jpg" },
-      ],
+      albums: [],
+      userId: this.$store.state.userId,
+      token: localStorage.getItem("token"),
     };
+  },
+  mounted() {
+    axios
+      .get("http://localhost:8000/api/users/getFavouriteAlbums", {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      })
+      .then((res) => {
+        this.albums = res.data;
+      })
+      .catch((err) => {
+        this.$vaToast.init({
+          message: "Failed to load the favourites. Try again",
+          color: "danger",
+        });
+        console.error("Error fetching albums:", err);
+      });
   },
 };
 </script>

@@ -22,9 +22,25 @@ const findUserByEmail = async (email) => {
     return null;
 };
 
+const findUserNameById = async (id) => {
+    try {
+        const userDoc = await db.collection("users").doc(id).get();
+
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            return userData.username;
+        } else {
+            console.log("User not found");
+        }
+    } catch (error) {
+        console.error("Error fetching user by ID:", error);
+    }
+    return null;
+};
+
 const generateToken = (email) => {
     let token = jwt.sign({ email }, secretToken,{ expiresIn: "3h"})
     return token
 }
 
-module.exports = {findUserByEmail,generateToken};
+module.exports = {findUserByEmail,generateToken,findUserNameById};
