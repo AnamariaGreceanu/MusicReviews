@@ -44,7 +44,7 @@ export default {
       axios
         .post("http://localhost:8000/api/users/login", this.data)
         .then((res) => {
-          localStorage.setItem("token", res.data.accessToken);
+          this.$store.commit("setToken", res.data.accessToken);
           this.$store.commit("setUserId", res.data.user.id);
           this.$router.push("/albums");
         })

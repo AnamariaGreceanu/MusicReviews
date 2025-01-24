@@ -1,6 +1,11 @@
 <template>
   <Navbar></Navbar>
-  <div class="card-container">
+  <div v-if="loading" class="card-container">Loading your favourites...</div>
+  <div v-else-if="albums.length === 0" class="card-container">
+    You have no album added to favourites yet. Please return to the albums
+    section and add one of your choice.
+  </div>
+  <div v-else class="card-container">
     <div v-for="(album, index) in albums" :key="index" class="album-card-item">
       <AlbumCard
         :album="album"
@@ -26,11 +31,16 @@ export default {
     return {
       albums: [],
       userId: this.$store.state.userId,
-      token: localStorage.getItem("token"),
+      token: this.$store.state.token,
+      loading: true,
     };
   },
   mounted() {
-    this.loadFavourites();
+    if (!this.token) {
+      this.$router.push("/login");
+    } else {
+      this.loadFavourites();
+    }
   },
   methods: {
     removeFromFavourites(albumName) {
@@ -64,6 +74,7 @@ export default {
     },
 
     loadFavourites() {
+      this.loading = true;
       axios
         .get("http://localhost:8000/api/users/getFavouriteAlbums", {
           headers: {
@@ -74,11 +85,24 @@ export default {
           this.albums = res.data;
         })
         .catch((err) => {
-          this.$vaToast.init({
-            message: "Failed to load the favourites. Try again",
-            color: "danger",
-          });
-          console.error("Error fetching albums:", err);
+          if (err.response.status === 401 || err.response.status === 403) {
+            this.$vaToast.init({
+              message: "Your session may be expired. Try to login again",
+              color: "danger",
+            });
+            this.$router.push("/login");
+          } else if (err.response.status !== 404) {
+            this.$vaToast.init({
+              message:
+                err.response.data.message ||
+                "Failed to load the favourites. Try again",
+              color: "danger",
+            });
+            console.error("Error fetching albums:", err);
+          }
+        })
+        .finally(() => {
+          this.loading = false;
         });
     },
   },

@@ -129,7 +129,7 @@ export default {
       currentReviewId: null,
       newReviewContent: "",
       newReviewLiked: true,
-      token: localStorage.getItem("token"),
+      token: this.$store.state.token,
     };
   },
   methods: {

@@ -15,7 +15,8 @@
     "vue-infinite-scroll": "^2.0.2",
     "vue-router": "^4.0.3",
     "vuestic-ui": "^1.10.3",
-    "vuex": "^4.0.0"
+    "vuex": "^4.0.0",
+    "vuex-persistedstate": "^4.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
