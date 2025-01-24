@@ -29,7 +29,7 @@ const getAllAlbums = async(req, res) => {
     db.collection("albums").get().then((querySnapshot) => {
         querySnapshot.forEach((doc) => {
             let currentDoc = {...doc.data()};
-            currentDoc.id = doc.id;
+            currentDoc.albumId = doc.id;
             albums.push(currentDoc);
         });
     }).then(()=>{

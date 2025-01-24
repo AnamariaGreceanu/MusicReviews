@@ -2,7 +2,11 @@
   <Navbar></Navbar>
   <div class="card-container">
     <div v-for="(album, index) in albums" :key="index" class="album-card-item">
-      <AlbumCard :album="album" />
+      <AlbumCard
+        :album="album"
+        :isFavouritePage="true"
+        @removeFromFavourites="removeFromFavourites"
+      />
     </div>
   </div>
 </template>
@@ -26,22 +30,57 @@ export default {
     };
   },
   mounted() {
-    axios
-      .get("http://localhost:8000/api/users/getFavouriteAlbums", {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      })
-      .then((res) => {
-        this.albums = res.data;
-      })
-      .catch((err) => {
-        this.$vaToast.init({
-          message: "Failed to load the favourites. Try again",
-          color: "danger",
+    this.loadFavourites();
+  },
+  methods: {
+    removeFromFavourites(albumName) {
+      const toBeDeleted = this.albums.find(
+        (fav) => fav.albumName === albumName
+      );
+      axios
+        .delete(
+          `http://localhost:8000/api/users/removeFromFavourites/${toBeDeleted.favouriteId}`,
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          }
+        )
+        .then((res) => {
+          this.albums = this.albums.filter(
+            (fav) => fav.albumName !== albumName
+          );
+          this.$vaToast.init({
+            message: res.data.message,
+            color: "warning",
+          });
+        })
+        .catch((err) =>
+          this.$vaToast.init({
+            message:
+              err.response.data.message ||
+              "Couldn't be removed from favourites. Try again.",
+            color: "danger",
+          })
+        );
+    },
+
+    loadFavourites() {
+      axios
+        .get("http://localhost:8000/api/users/getFavouriteAlbums", {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        })
+        .then((res) => {
+          this.albums = res.data;
+        })
+        .catch((err) => {
+          this.$vaToast.init({
+            message: "Failed to load the favourites. Try again",
+            color: "danger",
+          });
+          console.error("Error fetching albums:", err);
         });
-        console.error("Error fetching albums:", err);
-      });
+    },
   },
 };
 </script>

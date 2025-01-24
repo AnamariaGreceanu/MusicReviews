@@ -7,10 +7,31 @@
           <p class="album-artist">By {{ album.artist }}</p>
           <img :src="album.photoAlbum" alt="Album Cover" class="album-photo" />
         </div>
-
         <div class="right-section">
           <h4>Reviews</h4>
           <va-button size="small" @click="openModal">Add Review</va-button>
+          <va-button
+            v-if="!isFavouritePage"
+            icon
+            @click="toggleFavourite"
+            :color="isFavourite(album.albumName) ? 'warning' : 'transparent'"
+            size="small"
+          >
+            <i
+              :class="
+                isFavourite(album.albumName) ? 'pi pi-star-fill' : 'pi pi-star'
+              "
+              style="font-size: 1.5rem"
+            ></i>
+          </va-button>
+          <va-button
+            v-if="isFavouritePage"
+            size="small"
+            color="danger"
+            @click="removeFromFavourites"
+          >
+            Remove from Favorites
+          </va-button>
           <div class="reviews" ref="reviewsContainer">
             <div v-for="(review, index) in reviews" :key="index" class="review">
               <p>
@@ -56,7 +77,6 @@
     <va-modal
       v-model="isModalOpen"
       :title="isEditMode ? 'Edit Review' : 'Add a Review'"
-      @cancel="closeModal"
       @ok="isEditMode ? updateReview() : addReview()"
       :ok-text="isEditMode ? 'Update' : 'Submit'"
     >
@@ -91,6 +111,13 @@ export default {
       type: Object,
       required: true,
     },
+    isFavouritePage: {
+      type: Boolean,
+      default: false,
+    },
+    isFavourite: {
+      type: Function,
+    },
   },
   data() {
     return {
@@ -110,7 +137,7 @@ export default {
       this.loading = true;
       axios
         .get(
-          `http://localhost:8000/api/reviews/getReviewsByAlbumId/${this.album.id}`,
+          `http://localhost:8000/api/reviews/getReviewsByAlbumId/${this.album.albumId}`,
           {
             headers: {
               Authorization: `Bearer ${this.token}`,
@@ -169,7 +196,7 @@ export default {
 
       axios
         .post(
-          `http://localhost:8000/api/reviews/addReview/${this.album.id}`,
+          `http://localhost:8000/api/reviews/addReview/${this.album.albumId}`,
           newReview,
           {
             headers: {
@@ -269,6 +296,17 @@ export default {
             color: "success",
           });
         });
+    },
+
+    toggleFavourite() {
+      if (this.isFavourite(this.album.albumName)) {
+        this.$emit("remove-favourite", this.album.albumName);
+      } else {
+        this.$emit("add-favourite", this.album.albumId);
+      }
+    },
+    removeFromFavourites() {
+      this.$emit("removeFromFavourites", this.album.albumName);
     },
   },
 

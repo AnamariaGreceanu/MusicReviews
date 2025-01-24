@@ -112,7 +112,7 @@ const getFavouriteAlbums = async(req, res) => {
             try {
                 const albumDoc = await db.collection("albums").doc(albumId).get();
                 if (albumDoc.exists) {
-                    albums.push({ ...albumDoc.data(), favouriteId });
+                    albums.push({ ...albumDoc.data(), albumId, favouriteId });
                 }
             } catch (err) {
                 return res.status(500).send(err);
