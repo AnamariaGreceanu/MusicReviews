@@ -9,29 +9,37 @@
         </div>
         <div class="right-section">
           <h4>Reviews</h4>
-          <va-button size="small" @click="openModal">Add Review</va-button>
-          <va-button
-            v-if="!isFavouritePage"
-            icon
-            @click="toggleFavourite"
-            :color="isFavourite(album.albumName) ? 'warning' : 'transparent'"
-            size="small"
-          >
-            <i
-              :class="
-                isFavourite(album.albumName) ? 'pi pi-star-fill' : 'pi pi-star'
-              "
-              style="font-size: 1.5rem"
-            ></i>
-          </va-button>
-          <va-button
-            v-if="isFavouritePage"
-            size="small"
-            color="danger"
-            @click="removeFromFavourites"
-          >
-            Remove from Favorites
-          </va-button>
+          <div class="albums-options">
+            <va-button size="small" @click="openModal" class="custom-button"
+              >Add Review</va-button
+            >
+            <va-button
+              v-if="!isFavouritePage"
+              icon
+              @click="toggleFavourite"
+              :color="isFavourite(album.albumName) ? 'warning' : 'transparent'"
+              size="small"
+            >
+              <i
+                :class="
+                  isFavourite(album.albumName)
+                    ? 'pi pi-star-fill'
+                    : 'pi pi-star'
+                "
+                style="font-size: 1.3rem"
+              ></i>
+            </va-button>
+            <va-button
+              v-if="isFavouritePage"
+              icon
+              :color="'warning'"
+              size="small"
+              @click="removeFromFavourites"
+            >
+              <i :class="'pi pi-star-fill'" style="font-size: 1.3rem"></i>
+            </va-button>
+          </div>
+
           <div class="reviews" ref="reviewsContainer">
             <div v-for="(review, index) in reviews" :key="index" class="review">
               <p>
@@ -39,32 +47,35 @@
                 <i
                   v-if="review.isLiked"
                   class="pi pi-thumbs-up"
-                  style="font-size: 1.5rem; margin: 0 5px"
+                  style="font-size: 1.3rem; margin-left: 5px"
                 ></i>
                 <i
                   v-else
                   class="pi pi-thumbs-down"
-                  style="font-size: 1.5rem; margin: 0 5px"
+                  style="font-size: 1.3rem; margin-left: 5px"
                 ></i>
 
                 {{ review.review }}
               </p>
-              <va-button
-                v-if="review.userId === userId"
-                size="small"
-                class="edit-btn"
-                @click="editReview(review.id)"
-              >
-                Edit
-              </va-button>
-              <va-button
-                v-if="review.userId === userId"
-                size="small"
-                color="danger"
-                @click="deleteReview(review.id)"
-              >
-                Delete
-              </va-button>
+              <div class="button-userOptions">
+                <va-button
+                  v-if="review.userId === userId"
+                  size="small"
+                  @click="editReview(review.id)"
+                  class="custom-button"
+                >
+                  Edit
+                </va-button>
+                <va-button
+                  v-if="review.userId === userId"
+                  size="small"
+                  color="danger"
+                  class="custom-button"
+                  @click="deleteReview(review.id)"
+                >
+                  Delete
+                </va-button>
+              </div>
             </div>
             <div v-if="loading" class="loading">Loading more reviews...</div>
             <div v-if="!loading && reviews.length === 0" class="no-reviews">
@@ -325,63 +336,83 @@ export default {
 
 .card-content {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
+  padding: 15px;
+
+  .left-section {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    flex: 2;
+
+    h3 {
+      min-height: 50px;
+      align-items: center;
+      display: flex;
+    }
+    .album-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 8px;
+      margin: 10px;
+    }
+
+    .album-artist {
+      color: gray;
+      margin-top: 5px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+  }
+
+  .right-section {
+    flex: 3;
+
+    h4 {
+      margin-bottom: 10px;
+    }
+    .albums-options {
+      justify-content: center;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .custom-button {
+      border-radius: 8px !important;
+    }
+    .reviews {
+      margin-top: 10px;
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #dbc3c3;
+      padding: 0.5rem;
+      border-radius: 8px;
+      width: 180px;
+      .review {
+        margin-bottom: 1rem;
+        .button-userOptions {
+          justify-content: center;
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 3px;
+        }
+      }
+      .loading {
+        text-align: center;
+        margin-top: 1rem;
+        color: gray;
+      }
+    }
+  }
 }
 
-.left-section {
-  display: flex;
-  align-items: center;
-  display: block;
-  margin: 10px;
-  flex: 2;
-}
-
-.album-photo {
-  width: 120px;
-  height: 120px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.album-artist {
-  color: gray;
-  margin: 10px;
-}
-
-.right-section {
-  flex: 3;
-}
-
-.reviews {
-  height: 200px;
-  overflow-y: auto;
-  border: 1px solid #eaeaea;
-  padding: 1rem;
-  margin: 5px;
-  border-radius: 8px;
-}
-
-.review {
-  margin-bottom: 1rem;
-}
-
-.edit-btn {
-  margin-right: 0.5rem;
-}
-
-.loading {
-  text-align: center;
-  margin-top: 1rem;
-  color: gray;
-}
 .modal-content {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
 
-.modal-actions {
-  display: flex;
-  justify-content: space-between;
+  .modal-actions {
+    display: flex;
+    justify-content: space-between;
+  }
 }
 </style>

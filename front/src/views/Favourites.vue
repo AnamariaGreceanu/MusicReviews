@@ -112,8 +112,9 @@ export default {
 <style scoped>
 .card-container {
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 2rem;
   padding: 1rem;
 }
 

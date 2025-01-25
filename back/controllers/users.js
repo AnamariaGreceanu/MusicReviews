@@ -60,7 +60,7 @@ const loginUser = async (req, res) => {
     try {
         let { email, password } = req.body
         if ( !email || !password) {
-            return res.status(400).send("email and password are mandatory")
+            return res.status(400).send("Email and password are mandatory")
         }
         
         let user = await findUserByEmail(email)

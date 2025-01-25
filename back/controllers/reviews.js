@@ -79,10 +79,14 @@ const getReviewsByAlbumId = async (req, res) => {
 
 const updateReview = async (req, res) => {
     try {
+        let { review, isLiked } = req.body
+        if (!review || isLiked === null) {
+            return res.status(400).send("Review content and you choosing if you liked is mandatory")
+        }
         const reviewId = req.params.reviewId;
-        let review = {...req.body};
-        await db.collection("reviews").doc(reviewId).update(review);
-        return res.status(200).json({ message: "review was uppdated", review });
+        let updatedReview = {...req.body};
+        await db.collection("reviews").doc(reviewId).update(updatedReview);
+        return res.status(200).json({ message: "Review was uppdated", review });
     } catch (err){
         return res.status(500).send(err);
     }
