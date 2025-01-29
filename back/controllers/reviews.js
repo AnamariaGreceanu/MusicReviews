@@ -1,36 +1,42 @@
 const { faker } = require('@faker-js/faker')
 const db=require('../config/config')
 const { findUserNameById } = require('../helpers/users')
+const { v4: uuidv4 } = require('uuid');
 
 const generateFakeReviews = async (req, res) => {
-    try { 
+    try {
         const albums = []
         const users = []
         const albumsDatabase = await db.collection('albums').get()
         const usersDatabase = await db.collection('users').get()
-
+        
         albumsDatabase.docs.map((album) => {
-            albums.push(album.id)
+            albums.push(album.ref)
         })
         usersDatabase.docs.map((user) => {
             users.push(user.id)
         })
 
         const no_reviews = req.params.no_reviews;
-        
-        for (let i = 0; i < no_reviews; i++){
-            const albumId = faker.helpers.arrayElement(albums)
+        for (let i = 0; i < no_reviews; i++) {
             const userId = faker.helpers.arrayElement(users)
-            const review = faker.lorem.sentences({ min: 1, max: 3 }) 
+            const review = faker.lorem.sentences({ min: 1, max: 3 })
             const isLiked = faker.datatype.boolean()
-            
+            const albumRef = faker.helpers.arrayElement(albums);
+
+            const albumDoc = await albumRef.get();
+            const albumData = albumDoc.data();
+            const reviews = albumData.reviews || [];
+        
             const fakeReview = {
-                'albumId': albumId,
+                'reviewId':uuidv4(),
                 'userId': userId,
                 'review': review,
                 'isLiked': isLiked
             }
-            await db.collection('reviews').add(fakeReview)
+
+            reviews.push(fakeReview);
+            await albumRef.update({ reviews });
         }
         return res.status(201).json({message:'New reviews added'})
     } catch (err) {
@@ -45,10 +51,20 @@ const addReview = async(req, res) => {
             return res.status(400).send("Review content and you choosing if you liked is mandatory")
         }
         const albumId = req.params.albumId;
+        const albumRef = db.collection("albums").doc(albumId);
+        const albumDoc = await albumRef.get();
+
+        if (!albumDoc.exists) {
+            return res.status(404).json({ message: "Album not found" });
+        }
+
+        let reviews = albumDoc.data().reviews || []; 
         let newReview = { ...req.body };
+        newReview.reviewId = uuidv4();
         newReview.userId = req.user;
-        newReview.albumId = albumId;
-        await db.collection("reviews").add(newReview);
+        reviews.push(newReview);
+
+        await albumRef.update({ reviews });
         return res.status(201).json({ message: "Review created succesfully", newReview });
     } catch (err){
         return res.status(500).json(err);
@@ -58,18 +74,21 @@ const addReview = async(req, res) => {
 const getReviewsByAlbumId = async (req, res) => {
     try {
         const albumId = req.params.albumId;
-        const reviewsSnapshot = await db.collection("reviews").where("albumId", "==", albumId).get();
+         const albumRef = db.collection("albums").doc(albumId);
+        const albumDoc = await albumRef.get();
+        if (!albumDoc.exists) {
+            return res.status(404).json({ message: "Album not found" });
+        }
 
-        if (reviewsSnapshot.empty) {
+        if (!albumDoc.data().reviews) {
             return res.status(200).json([]);
         }
 
         let reviews = [];
-        for (const doc of reviewsSnapshot.docs) {
-            const review = doc.data();
-            review.id = doc.id;
-            const username = await findUserNameById(review.userId);
-            reviews.push({...review,username: username});
+        for (const doc of albumDoc.data().reviews) {
+            const review = doc;
+            const username = await findUserNameById(doc.userId)
+            reviews.push({...review,username: username})
         }
         return res.status(200).json(reviews);
     } catch (err) {
@@ -83,10 +102,28 @@ const updateReview = async (req, res) => {
         if (!review || isLiked === null) {
             return res.status(400).send("Review content and you choosing if you liked is mandatory")
         }
-        const reviewId = req.params.reviewId;
-        let updatedReview = {...req.body};
-        await db.collection("reviews").doc(reviewId).update(updatedReview);
-        return res.status(200).json({ message: "Review was uppdated", review });
+        const { albumId, reviewId } = req.params; 
+        const albumRef = db.collection("albums").doc(albumId);
+        const albumDoc = await albumRef.get();
+
+        if (!albumDoc.exists) {
+            return res.status(404).json({ message: "Album not found" });
+        }
+
+        let reviews = albumDoc.data().reviews || [];
+        const reviewIndex = reviews.findIndex((r) => r.reviewId === reviewId);
+        if (reviewIndex === -1) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+
+        reviews[reviewIndex] = {
+            ...reviews[reviewIndex],
+            review,
+            isLiked
+        };
+
+        await albumRef.update({ reviews });
+        return res.status(200).json({ message: "Review was uppdated", newReview:reviews[reviewIndex] });
     } catch (err){
         return res.status(500).send(err);
     }
@@ -94,8 +131,22 @@ const updateReview = async (req, res) => {
 
 const deleteReview = async (req, res) => {
     try {
-        const reviewId = req.params.reviewId;
-        await db.collection("reviews").doc(reviewId).delete();
+        const { albumId, reviewId } = req.params;
+        const albumRef = db.collection("albums").doc(albumId);
+        const albumDoc = await albumRef.get();
+
+        if (!albumDoc.exists) {
+            return res.status(404).json({ message: "Album not found" });
+        }
+
+        let reviews =  albumDoc.data().reviews || [];
+        const reviewIndex = reviews.findIndex(review => review.reviewId === reviewId);
+        if (reviewIndex === -1) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+
+        reviews.splice(reviewIndex, 1);
+        await albumRef.update({ reviews });
         return res.status(200).json({message:"Review deleted"});
     } catch (err){
         return res.status(500).send(err);

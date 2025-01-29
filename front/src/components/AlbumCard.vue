@@ -61,7 +61,7 @@
                 <va-button
                   v-if="review.userId === userId"
                   size="small"
-                  @click="editReview(review.id)"
+                  @click="editReview(review.reviewId)"
                   class="custom-button"
                 >
                   Edit
@@ -71,7 +71,7 @@
                   size="small"
                   color="danger"
                   class="custom-button"
-                  @click="deleteReview(review.id)"
+                  @click="deleteReview(review.reviewId)"
                 >
                   Delete
                 </va-button>
@@ -182,7 +182,7 @@ export default {
     },
 
     editReview(reviewId) {
-      const review = this.reviews.find((r) => r.id === reviewId);
+      const review = this.reviews.find((r) => r.reviewId === reviewId);
       if (review) {
         this.isEditMode = true;
         this.currentReviewId = reviewId;
@@ -250,8 +250,8 @@ export default {
       };
 
       axios
-        .patch(
-          `http://localhost:8000/api/reviews/${this.currentReviewId}`,
+        .put(
+          `http://localhost:8000/api/reviews/${this.album.albumId}/${this.currentReviewId}`,
           newReview,
           {
             headers: {
@@ -261,7 +261,7 @@ export default {
         )
         .then((res) => {
           const index = this.reviews.findIndex(
-            (review) => review.id === this.currentReviewId
+            (review) => review.reviewId === this.currentReviewId
           );
           if (index !== -1) {
             this.reviews[index].review = this.newReviewContent;
@@ -286,14 +286,17 @@ export default {
 
     deleteReview(reviewId) {
       axios
-        .delete(`http://localhost:8000/api/reviews/${reviewId}`, {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-          },
-        })
+        .delete(
+          `http://localhost:8000/api/reviews/${this.album.albumId}/${reviewId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+          }
+        )
         .then((res) => {
           this.reviews = this.reviews.filter(
-            (review) => review.id !== reviewId
+            (review) => review.reviewId !== reviewId
           );
           this.$vaToast.init({
             message: res.data.message,
